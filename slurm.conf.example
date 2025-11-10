@@ -1,0 +1,88 @@
+# /etc/slurm/slurm.conf
+# Slurm-K8s 통합 설정
+
+ClusterName=hufs-gpu-cluster
+SlurmctldHost=slurm-controller
+
+# 인증 및 암호화
+AuthType=auth/munge
+CryptoType=crypto/munge
+
+# 스케줄러 설정
+SchedulerType=sched/backfill
+SelectType=select/cons_tres
+SelectTypeParameters=CR_Core_Memory
+
+# Backfill 스케줄러 파라미터
+SchedulerParameters=bf_max_job_test=100,bf_interval=30,bf_window=1440
+
+# 우선순위 설정 (Multifactor)
+PriorityType=priority/multifactor
+PriorityDecayHalfLife=7-0      # 7일
+PriorityWeightAge=1000          # 대기 시간 가중치
+PriorityWeightFairshare=10000   # 공정 공유 가중치
+PriorityWeightJobSize=1000      # Job 크기 가중치
+PriorityWeightQOS=10000         # QOS 가중치
+PriorityMaxAge=7-0              # 최대 에이징 기간
+
+# Accounting
+AccountingStorageType=accounting_storage/slurmdbd
+AccountingStorageHost=slurm-controller
+AccountingStoragePort=6819
+
+# 로깅
+SlurmctldLogFile=/var/log/slurm/slurmctld.log
+SlurmdLogFile=/var/log/slurm/slurmd.log
+SlurmctldDebug=info
+SlurmdDebug=info
+
+# Prolog/Epilog 스크립트 (핵심!)
+Prolog=/usr/local/bin/slurm_k8s_prolog.sh
+Epilog=/usr/local/bin/slurm_k8s_epilog.sh
+PrologFlags=Alloc                    # 할당 시 Prolog 실행
+TaskProlog=/usr/local/bin/task_prolog.sh
+TaskEpilog=/usr/local/bin/task_epilog.sh
+
+# Prolog/Epilog 타임아웃
+PrologEpilogTimeout=600              # 10분
+
+# Prolog 실패 시 Job 재큐잉 정책
+PrologFlags=Alloc,Serial
+# Alloc: 자원 할당 시 실행
+# Serial: Prolog를 직렬로 실행 (동시 실행 방지)
+
+# Prolog 실패 시 Job을 다시 큐로
+Requeue=1
+
+# Job 제출 설정
+MaxJobCount=10000
+MaxArraySize=1000
+
+# 기본 리소스 제한
+DefaultCPUs=1
+DefaultMemPerCPU=1024                # 1GB
+MaxTime=7-0                          # 최대 7일
+
+# 노드 정의 (K8s 노드들을 Slurm 노드로 등록)
+# 실제로는 K8s API를 통해 동적으로 관리하므로 dummy 노드 사용
+NodeName=k8s-virtual-node[1-10] CPUs=64 RealMemory=128000 Gres=gpu:8 State=UNKNOWN
+
+# 파티션 정의
+PartitionName=gpu Nodes=k8s-virtual-node[1-10] Default=YES MaxTime=7-0 State=UP
+PartitionName=cpu Nodes=k8s-virtual-node[1-10] MaxTime=7-0 State=UP
+
+# GRES (GPU) 설정
+GresTypes=gpu
+
+# 리소스 공유 설정
+OverSubscribe=NO                     # 노드 공유 비허용
+
+# 추가 플러그인
+ProctrackType=proctrack/linuxproc
+TaskPlugin=task/affinity,task/cgroup
+
+# Cgroup 설정
+CgroupAutomount=yes
+ConstrainCores=yes
+ConstrainDevices=yes
+ConstrainRAMSpace=yes

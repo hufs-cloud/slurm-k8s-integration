@@ -1,0 +1,63 @@
+# 로그 파일
+*.log
+logs/
+/var/log/
+
+# Slurm 실제 설정 파일 (example은 제외)
+slurm.conf
+!slurm.conf.example
+/etc/slurm/
+
+# Job 파일 (실제 사용자 데이터 보호)
+*.sbatch
+jobs/
+*.slurm
+
+# 임시 파일
+*.tmp
+*.swp
+*.bak
+*.backup
+*~
+
+# OS 파일
+.DS_Store
+Thumbs.db
+
+# 환경 설정 및 비밀 정보
+.env
+.env.local
+secrets/
+*.key
+*.pem
+*.crt
+
+# IDE 설정
+.vscode/
+.idea/
+*.iml
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+ENV/
+
+# 테스트 결과
+test-results/
+coverage/
+
+# NAS 데이터 (실제 데이터는 제외)
+/mnt/nas/results/
+/mnt/nas/slurm-jobs/processed/
+/mnt/nas/slurm-jobs/failed/
+
+# Kubernetes 실제 설정
+kubeconfig
+*.kubeconfig
+
+# 사용자별 설정
+user-config.yaml
+local-settings.conf

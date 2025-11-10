@@ -1,0 +1,99 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: slurm-job-JOBID
+  labels:
+    app: slurm-job
+    job-id: "JOBID"
+    user: "USERNAME"
+spec:
+  restartPolicy: Never
+  
+  # 노드 선택 (GPU 필요 시)
+  nodeSelector:
+    # GPU 요청 시: nvidia.com/gpu.present: "true"
+    # CPU 전용 시: 노드 선택 조건
+  
+  # 리소스 요청 및 제한
+  containers:
+  - name: slurm-job-container
+    image: nas-hub.local:5407/IMAGE_NAME:TAG
+    imagePullPolicy: IfNotPresent
+    
+    resources:
+      requests:
+        cpu: "CPU_REQUEST"
+        memory: "MEMORY_REQUEST"
+        nvidia.com/gpu: "GPU_REQUEST"  # GPU 요청 시만
+      limits:
+        cpu: "CPU_LIMIT"
+        memory: "MEMORY_LIMIT"
+        nvidia.com/gpu: "GPU_REQUEST"  # GPU 요청 시만
+    
+    # 볼륨 마운트
+    volumeMounts:
+    - name: workspace
+      mountPath: /workspace
+    - name: nas-data
+      mountPath: /mnt/nas
+    - name: results
+      mountPath: /results
+    
+    # 환경변수
+    env:
+    - name: SLURM_JOB_ID
+      value: "JOBID"
+    - name: SLURM_JOB_USER
+      value: "USERNAME"
+    - name: PYTHONUNBUFFERED
+      value: "1"
+    
+    # 실제 실행 명령어 (Prolog에서 주입)
+    # command와 args는 Prolog 스크립트에서 동적으로 추가됨
+    
+  # 볼륨 정의
+  volumes:
+  - name: workspace
+    persistentVolumeClaim:
+      claimName: pvc-USERNAME-JOBID
+  
+  - name: nas-data
+    nfs:
+      server: NAS_SERVER_IP
+      path: /volume1/shared
+      readOnly: false
+  
+  - name: results
+    nfs:
+      server: NAS_SERVER_IP
+      path: /volume1/slurm-results/JOBID
+      readOnly: false
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-USERNAME-JOBID
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: nfs-client  # NFS 기반 StorageClass
+  resources:
+    requests:
+      storage: 10Gi  # 기본 워크스페이스 크기
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-USERNAME-JOBID
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Delete
+  storageClassName: nfs-client
+  nfs:
+    server: NAS_SERVER_IP
+    path: /volume1/workspaces/USERNAME/JOBID
