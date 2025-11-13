@@ -1,0 +1,9 @@
+type: "std"
+id: "202203577"
+index: null
+
+resource:
+  gpu: 1
+  preset: "standard"
+
+script: "train.sh"
