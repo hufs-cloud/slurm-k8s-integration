@@ -77,7 +77,7 @@ Slurm의 강력한 스케줄링 정책과 Kubernetes의 컨테이너 오케스�
 ### 1. 사전 요구사항
 - ✅ Slurm 설치 완료
 - ✅ Kubernetes 클러스터 구성 완료
-- ✅ NAS 마운트 (`/mnt/nas`)
+- ✅ NAS 마운트 (`/mnt/test-k8s`)
 - ✅ 로컬 레지스트리 (`nas-hub.local:5407`)
 
 ### 2. GitHub에서 Clone (추천)
@@ -114,14 +114,14 @@ cat > hello.sh <<'EOF'
 #SBATCH --job-name=hello
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=1G
-#SBATCH --output=/mnt/nas/results/%j.out
+#SBATCH --output=/mnt/test-k8s/results/%j.out
 #K8S_IMAGE=nas-hub.local:5407/alpine:latest
 
 echo "Hello from Slurm-K8s!"
 EOF
 
 # 제출 방법 1: NAS 폴더에 복사
-cp hello.sh /mnt/nas/slurm-jobs/submit/
+cp hello.sh /mnt/test-k8s/slurm-jobs/submit/
 
 # 제출 방법 2: 직접 제출
 sbatch hello.sh
@@ -132,18 +132,18 @@ sbatch hello.sh
 ## 파일 구조
 
 ### 핵심 스크립트
-| 파일 | 설명 | 담당자 |
-|------|------|--------|
-| `slurm_k8s_prolog.sh` | Job 실행 전 K8s Pod 생성 | 공통 |
-| `slurm_k8s_epilog.sh` | Job 완료 후 결과 수집 및 정리 | 박세현 |
-| `job_validator.sh` | Job 파일 검증 | 최윤서 |
-| `job_watcher.sh` | NAS 폴더 감시 및 자동 제출 | 최윤서 |
-| `test_suite.sh` | 통합 테스트 스크립트 | 박세현 |
+| 파일 | 설명 |
+|------|------|
+| `slurm_k8s_prolog.sh` | Job 실행 전 K8s Pod 생성 |
+| `slurm_k8s_epilog.sh` | Job 완료 후 결과 수집 및 정리 |
+| `job_validator.sh` | Job 파일 검증 |
+| `job_watcher.sh` | NAS 폴더 감시 및 자동 제출 |
+| `test_suite.sh` | 통합 테스트 스크립트 |
 
 ### 설정 파일
 | 파일 | 설명 |
 |------|------|
-| `install.sh` | 🔥 자동 설치 스크립트 (추천) |
+| `install.sh` |  자동 설치 스크립트 (추천) |
 | `slurm.conf.example` | Slurm 설정 예시 |
 | `pod-template.yaml` | K8s Pod YAML 템플릿 |
 | `example-job.sh` | 샘플 Job 파일 |
@@ -152,62 +152,11 @@ sbatch hello.sh
 | 파일 | 내용 |
 |------|------|
 | **README.md** | 이 파일 - 프로젝트 개요 |
-| **GITHUB_QUICK_GUIDE.md** | 🚀 GitHub로 5분 만에 시작하기 |
+| **GITHUB_QUICK_GUIDE.md** |  GitHub로 5분 만에 시작하기 |
 | **QUICK_START.md** | 30분 만에 설치하기 |
 | **IMPLEMENTATION_GUIDE.md** | 상세 구현 가이드 |
 | **GITHUB_SETUP.md** | GitHub 상세 설정 가이드 |
-
 ---
-
-## 담당자별 가이드
-
-### 최윤서 - Job 검증 및 제출 시스템
-
-#### 구현 항목
-1. **Job 파일 형식 정의**
-   - SBATCH 지시어 필수 항목
-   - K8s 메타데이터 형식 (`#K8S_IMAGE=...`)
-   
-2. **검증 로직** (`job_validator.sh`)
-   - 필수 필드 확인
-   - 리소스 요청 검증
-   - 이미지 존재 확인
-   - 구문 검사
-
-3. **자동 제출** (`job_watcher.sh`)
-   - inotify로 NAS 폴더 감시
-   - 검증 통과 시 sbatch 제출
-   - 실패 시 에러 로그 생성
-
-#### 테스트 방법
-```bash
-# 검증 스크립트 단독 테스트
-./job_validator.sh example-job.sh
-
-# Job Watcher 테스트
-sudo systemctl start slurm-job-watcher
-cp example-job.sh /mnt/nas/slurm-jobs/submit/
-tail -f /var/log/slurm-k8s/job_watcher.log
-```
-
----
-
-### 김금동 - 스케줄링 및 이미지 관리
-
-#### 구현 항목
-1. **Slurm 스케줄링 정책**
-   - `slurm.conf` 설정
-   - Backfill 파라미터 튜닝
-   - Multifactor 우선순위 가중치 설정
-
-2. **컨테이너 이미지**
-   - 테스트 이미지 빌드
-   - NAS 레지스트리 푸시
-   - nerdctl-safe 사용법
-
-3. **리소스 모니터링**
-   - K8s 자원 상태 확인 명령어
-   - jq를 이용한 JSON 파싱
 
 #### 테스트 방법
 ```bash
@@ -223,50 +172,18 @@ nerdctl-safe push nas-hub.local:5407/test:latest
 # 리소스 상태 확인
 kubectl get nodes -o json | jq '.items[].status.allocatable'
 ```
-
 ---
 
-### 박세현 - 결과 수집 및 테스트
-
-#### 구현 항목
-1. **Epilog 스크립트** (`slurm_k8s_epilog.sh`)
-   - Pod 로그 수집
-   - stdout/stderr 저장
-   - 무결성 검증 (체크섬)
-   - 리소스 정리 (Pod → PVC → PV)
-
-2. **결과 디렉토리 구조**
-   ```
-   /mnt/nas/results/{JOB_ID}/
-   ├── stdout.log
-   ├── stderr.log
-   ├── job_summary.txt
-   ├── checksums.txt
-   └── outputs/
-   ```
-
-3. **통합 테스트** (`test_suite.sh`)
-   - 인프라 검증
-   - Job 파일 검증
-   - 스케줄링 정책
-   - K8s 리소스 생성
-   - 결과 수집
-   - E2E 워크플로우
-
-#### 테스트 방법
+**테스트 방법**:
 ```bash
-# Epilog 단독 테스트
-SLURM_JOB_ID=12345 /usr/local/bin/slurm_k8s_epilog.sh
-
-# 전체 테스트 스위트 실행
+# 전체 통합 테스트
 ./test_suite.sh
+./test_suite.sh --verbose --component epilog
 
-# 특정 Job 결과 확인
-ls -lh /mnt/nas/results/12345/
-cat /mnt/nas/results/12345/job_summary.txt
+# 특정 항목 테스트
+./test_suite.sh --test infrastructure
+./test_suite.sh --test epilog
 ```
-
----
 
 ## 주요 기능 상세
 
@@ -274,7 +191,7 @@ cat /mnt/nas/results/12345/job_summary.txt
 ```
 사용자 Job 파일 작성
     ↓
-NAS 공유폴더에 업로드 (/mnt/nas/slurm-jobs/submit/)
+NAS 공유폴더에 업로드 (/mnt/test-k8s/slurm-jobs/submit/)
     ↓
 Job Watcher가 inotify로 감지
     ↓
@@ -282,7 +199,7 @@ job_validator.sh로 검증
     ↓ (통과)
 sbatch로 Slurm 큐에 제출
     ↓ (실패)
-/mnt/nas/slurm-jobs/failed/로 이동 + 에러 로그
+/mnt/test-k8s/slurm-jobs/failed/로 이동 + 에러 로그
 ```
 
 ### 2. 스케줄링 정책
@@ -346,89 +263,8 @@ kubectl get events --sort-by='.lastTimestamp' | tail -20
 tail -f /var/log/slurm-k8s/epilog_*.log
 
 # NAS 마운트 확인
-mountpoint /mnt/nas
+mountpoint /mnt/test-k8s
 
 # 권한 확인
-ls -ld /mnt/nas/results/
+ls -ld /mnt/test-k8s/results/
 ```
-
----
-
-## 성능 최적화
-
-### 스케줄링 최적화
-```conf
-# /etc/slurm/slurm.conf
-SchedulerParameters=bf_max_job_test=200,bf_interval=15,bf_window=2880
-```
-- `bf_max_job_test`: 한 번에 검사할 Job 수 증가
-- `bf_interval`: 스케줄링 주기 단축
-- `bf_window`: 백필 시간 창 확대
-
-### 이미지 캐싱
-```bash
-# 자주 사용하는 이미지 미리 pull
-for node in node1 node2 node3; do
-  ssh $node "nerdctl-safe pull nas-hub.local:5407/pytorch:latest"
-done
-```
-
----
-
-## 보안 고려사항
-
-1. **네임스페이스 격리**: 사용자별 K8s 네임스페이스 분리
-2. **리소스 쿼터**: 사용자당 최대 리소스 제한
-3. **네트워크 정책**: Pod 간 통신 제한
-4. **이미지 검증**: 허용된 레지스트리만 사용
-
----
-
-## 참고 자료
-
-- **Slurm 공식 문서**: https://slurm.schedmd.com/
-- **Kubernetes 공식 문서**: https://kubernetes.io/docs/
-- **Prolog/Epilog 가이드**: https://slurm.schedmd.com/prolog_epilog.html
-- **내부 문서**:
-  - [빠른 시작 가이드](computer:///mnt/user-data/outputs/QUICK_START.md)
-  - [상세 구현 가이드](computer:///mnt/user-data/outputs/IMPLEMENTATION_GUIDE.md)
-
----
-
-## 라이센스 및 기여
-
-이 프로젝트는 한국외국어대학교 GPU 클러스터 관리를 위해 개발되었습니다.
-
-### 개발팀
-- **최윤서**: Job 검증 및 제출 시스템
-- **김금동**: 스케줄링 정책 및 이미지 관리
-- **박세현**: 결과 수집 및 테스트
-
----
-
-## 체크리스트
-
-### 설치 전
-- [ ] Slurm 설치 확인
-- [ ] K8s 클러스터 구성 확인
-- [ ] NAS 마운트 확인
-- [ ] 로컬 레지스트리 접근 확인
-
-### 설치 중
-- [ ] 스크립트 복사 및 권한 설정
-- [ ] Slurm 설정 수정
-- [ ] Job Watcher 서비스 시작
-- [ ] 로그 디렉토리 생성
-
-### 설치 후
-- [ ] 테스트 Job 실행
-- [ ] Pod 생성 확인
-- [ ] 결과 수집 확인
-- [ ] 리소스 정리 확인
-
----
-
-**설치 및 운영 문의**: 각 담당자에게 연락
-
-**문서 버전**: 1.0
-**최종 수정일**: 2025-11-09
