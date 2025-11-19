@@ -22,7 +22,7 @@ POD_STATUS=$(kubectl get pod "$POD_NAME" -o jsonpath='{.status.phase}' 2>/dev/nu
 echo "[$(date)] Pod status: $POD_STATUS"
 
 # 3. 로그 수집
-RESULT_DIR="/mnt/nas/results/${SLURM_JOB_ID}"
+RESULT_DIR="/mnt/test-k8s/results/${SLURM_JOB_ID}"
 mkdir -p "$RESULT_DIR"
 
 echo "[$(date)] Collecting logs..."

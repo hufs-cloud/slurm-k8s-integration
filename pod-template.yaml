@@ -35,7 +35,7 @@ spec:
     - name: workspace
       mountPath: /workspace
     - name: nas-data
-      mountPath: /mnt/nas
+      mountPath: /mnt/test-k8s
     - name: results
       mountPath: /results
     

@@ -64,13 +64,13 @@ sudo systemctl status slurmctld
 
 ```bash
 # Job 제출/결과 디렉토리 생성
-mkdir -p /mnt/nas/slurm-jobs/{submit,processed,failed}
-mkdir -p /mnt/nas/results
-mkdir -p /mnt/nas/scripts
+mkdir -p /mnt/test-k8s/slurm-jobs/{submit,processed,failed}
+mkdir -p /mnt/test-k8s/results
+mkdir -p /mnt/test-k8s/scripts
 
 # 권한 설정
-chmod 755 /mnt/nas/slurm-jobs/*
-chmod 755 /mnt/nas/results
+chmod 755 /mnt/test-k8s/slurm-jobs/*
+chmod 755 /mnt/test-k8s/results
 ```
 
 ### 4단계: Job Watcher 서비스 시작 (3분)
@@ -115,14 +115,14 @@ nerdctl-safe images | grep nas-hub.local:5407
 
 ```bash
 # 테스트 Job 파일 생성
-cat > /mnt/nas/slurm-jobs/submit/hello-world.sh <<'EOF'
+cat > /mnt/test-k8s/slurm-jobs/submit/hello-world.sh <<'EOF'
 #!/bin/bash
 #SBATCH --job-name=hello-world
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=512M
 #SBATCH --time=00:02:00
-#SBATCH --output=/mnt/nas/results/hello-%j.out
-#SBATCH --error=/mnt/nas/results/hello-%j.err
+#SBATCH --output=/mnt/test-k8s/results/hello-%j.out
+#SBATCH --error=/mnt/test-k8s/results/hello-%j.err
 #K8S_IMAGE=nas-hub.local:5407/alpine:latest
 
 echo "=========================================="
@@ -145,7 +145,7 @@ EOF
 **Job 제출 확인:**
 ```bash
 # Job Watcher가 자동으로 제출 (또는 직접 제출)
-# sbatch /mnt/nas/slurm-jobs/submit/hello-world.sh
+# sbatch /mnt/test-k8s/slurm-jobs/submit/hello-world.sh
 
 # Job 상태 확인
 watch -n 2 'squeue; echo "---"; kubectl get pods -l app=slurm-job'
@@ -169,7 +169,7 @@ systemctl is-active slurm-job-watcher
 kubectl cluster-info
 
 # NAS 마운트 확인
-mountpoint /mnt/nas
+mountpoint /mnt/test-k8s
 ```
 
 ### ✅ Job 워크플로우
@@ -181,7 +181,7 @@ squeue
 kubectl get pods -l app=slurm-job
 
 # 3. Job 완료 후 결과 확인
-ls -lh /mnt/nas/results/
+ls -lh /mnt/test-k8s/results/
 
 # 4. 로그 확인
 tail -f /var/log/slurm-k8s/prolog_*.log
@@ -203,11 +203,11 @@ cat > gpu_job.sh <<'EOF'
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=8G
 #SBATCH --time=01:00:00
-#SBATCH --output=/mnt/nas/results/gpu-%j.out
+#SBATCH --output=/mnt/test-k8s/results/gpu-%j.out
 #K8S_IMAGE=nas-hub.local:5407/pytorch:2.0-cuda11.8
 
 nvidia-smi
-python /mnt/nas/scripts/train.py
+python /mnt/test-k8s/scripts/train.py
 EOF
 
 sbatch gpu_job.sh
@@ -215,8 +215,8 @@ sbatch gpu_job.sh
 
 **Python 스크립트 실행:**
 ```bash
-# /mnt/nas/scripts/example.py 생성
-cat > /mnt/nas/scripts/example.py <<'EOF'
+# /mnt/test-k8s/scripts/example.py 생성
+cat > /mnt/test-k8s/scripts/example.py <<'EOF'
 import time
 import os
 
@@ -236,10 +236,10 @@ cat > python_job.sh <<'EOF'
 #SBATCH --job-name=python-test
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=2G
-#SBATCH --output=/mnt/nas/results/python-%j.out
+#SBATCH --output=/mnt/test-k8s/results/python-%j.out
 #K8S_IMAGE=nas-hub.local:5407/python:3.11
 
-python3 /mnt/nas/scripts/example.py
+python3 /mnt/test-k8s/scripts/example.py
 EOF
 
 sbatch python_job.sh
@@ -276,7 +276,7 @@ kubectl get events --sort-by='.lastTimestamp' | tail -20
 tail -100 /var/log/slurm-k8s/epilog_*.log
 
 # NAS 경로 확인
-ls -lh /mnt/nas/results/
+ls -lh /mnt/test-k8s/results/
 ```
 
 ---
@@ -300,7 +300,7 @@ ls -lh /mnt/nas/results/
 echo "=== Slurm ===" && sinfo && \
 echo "=== Jobs ===" && squeue && \
 echo "=== K8s Pods ===" && kubectl get pods -l app=slurm-job && \
-echo "=== Recent Results ===" && ls -lht /mnt/nas/results/ | head -5
+echo "=== Recent Results ===" && ls -lht /mnt/test-k8s/results/ | head -5
 ```
 
 ---
@@ -308,4 +308,4 @@ echo "=== Recent Results ===" && ls -lht /mnt/nas/results/ | head -5
 **설치 완료! 🎉**
 
 이제 Slurm-K8s 통합 시스템이 준비되었습니다.
-`/mnt/nas/slurm-jobs/submit/`에 Job 파일을 복사하면 자동으로 처리됩니다!
+`/mnt/test-k8s/slurm-jobs/submit/`에 Job 파일을 복사하면 자동으로 처리됩니다!

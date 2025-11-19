@@ -90,18 +90,18 @@ echo ""
 echo -e "${YELLOW}[4/6] Setting up NAS directories...${NC}"
 
 # NAS 마운트 확인
-if ! mountpoint -q /mnt/nas 2>/dev/null; then
-    echo -e "${YELLOW}Warning: /mnt/nas is not mounted${NC}"
+if ! mountpoint -q /mnt/test-k8s 2>/dev/null; then
+    echo -e "${YELLOW}Warning: /mnt/test-k8s is not mounted${NC}"
     echo "Please ensure NAS is mounted before running jobs"
 else
-    mkdir -p /mnt/nas/slurm-jobs/submit
-    mkdir -p /mnt/nas/slurm-jobs/processed
-    mkdir -p /mnt/nas/slurm-jobs/failed
-    mkdir -p /mnt/nas/results
-    mkdir -p /mnt/nas/scripts
+    mkdir -p /mnt/test-k8s/slurm-jobs/submit
+    mkdir -p /mnt/test-k8s/slurm-jobs/processed
+    mkdir -p /mnt/test-k8s/slurm-jobs/failed
+    mkdir -p /mnt/test-k8s/results
+    mkdir -p /mnt/test-k8s/scripts
     
-    chmod 755 /mnt/nas/slurm-jobs/*
-    chmod 755 /mnt/nas/results
+    chmod 755 /mnt/test-k8s/slurm-jobs/*
+    chmod 755 /mnt/test-k8s/results
     
     echo "✓ NAS directories created"
 fi
@@ -205,10 +205,10 @@ Scripts Installed:
 
 Directories Created:
   - /var/log/slurm-k8s/
-  - /mnt/nas/slurm-jobs/submit/
-  - /mnt/nas/slurm-jobs/processed/
-  - /mnt/nas/slurm-jobs/failed/
-  - /mnt/nas/results/
+  - /mnt/test-k8s/slurm-jobs/submit/
+  - /mnt/test-k8s/slurm-jobs/processed/
+  - /mnt/test-k8s/slurm-jobs/failed/
+  - /mnt/test-k8s/results/
 
 Service Configured:
   - slurm-job-watcher.service
