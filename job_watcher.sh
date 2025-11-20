@@ -3,9 +3,9 @@
 
 set -e
 
-WATCH_DIR="/mnt/nas/slurm-jobs/submit"
-PROCESSED_DIR="/mnt/nas/slurm-jobs/processed"
-FAILED_DIR="/mnt/nas/slurm-jobs/failed"
+WATCH_DIR="/mnt/test-k8s/slurm-jobs/submit"
+PROCESSED_DIR="/mnt/test-k8s/slurm-jobs/processed"
+FAILED_DIR="/mnt/test-k8s/slurm-jobs/failed"
 
 mkdir -p "$WATCH_DIR" "$PROCESSED_DIR" "$FAILED_DIR"
 

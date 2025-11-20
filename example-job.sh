@@ -5,13 +5,13 @@
 #SBATCH --mem=32G
 #SBATCH --gres=gpu:2
 #SBATCH --time=04:00:00
-#SBATCH --output=/mnt/nas/results/%j.out
-#SBATCH --error=/mnt/nas/results/%j.err
+#SBATCH --output=/mnt/test-k8s/results/%j.out
+#SBATCH --error=/mnt/test-k8s/results/%j.err
 
 # K8s 관련 메타데이터
 #K8S_IMAGE=nas-hub.local:5407/pytorch:2.0-cuda11.8
 #K8S_WORKDIR=/workspace
-#K8S_SCRIPT=/mnt/nas/scripts/train_model.py
+#K8S_SCRIPT=/mnt/test-k8s/scripts/train_model.py
 
 # 환경 설정
 export CUDA_VISIBLE_DEVICES=0,1
@@ -33,8 +33,8 @@ python --version
 pip list | grep torch
 
 # 메인 학습 스크립트 실행
-python /mnt/nas/scripts/train_model.py \
-    --data-dir /mnt/nas/datasets/imagenet \
+python /mnt/test-k8s/scripts/train_model.py \
+    --data-dir /mnt/test-k8s/datasets/imagenet \
     --output-dir /results \
     --epochs 100 \
     --batch-size 256 \
@@ -43,7 +43,7 @@ python /mnt/nas/scripts/train_model.py \
 
 # 학습 완료 후 체크포인트를 NAS로 복사
 echo "Copying results to NAS..."
-cp -r /results/* /mnt/nas/results/$SLURM_JOB_ID/
+cp -r /results/* /mnt/test-k8s/results/$SLURM_JOB_ID/
 
 echo "=========================================="
 echo "Job completed at: $(date)"

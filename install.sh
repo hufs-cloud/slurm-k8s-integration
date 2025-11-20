@@ -37,13 +37,10 @@ if ! command -v kubectl &> /dev/null; then
 fi
 echo "✓ kubectl installed"
 
-# inotify-tools 확인 및 설치
-if ! command -v inotifywait &> /dev/null; then
-    echo "Installing inotify-tools..."
-    apt-get update -qq
-    apt-get install -y inotify-tools
-fi
-echo "✓ inotify-tools installed"
+# Python packages 확인 및 설치
+echo "Installing Python packages..."
+pip install --user inotify pyyaml
+echo "✓ Python packages installed"
 
 # jq 확인 및 설치
 if ! command -v jq &> /dev/null; then
@@ -63,15 +60,21 @@ if [[ ! -f "slurm_k8s_prolog.sh" ]]; then
     exit 1
 fi
 
+# Shell 스크립트들
 cp slurm_k8s_prolog.sh /usr/local/bin/
 cp slurm_k8s_epilog.sh /usr/local/bin/
-cp job_validator.sh /usr/local/bin/
-cp job_watcher.sh /usr/local/bin/
 
+# Python 스크립트들
+cp job_validator.py /usr/local/bin/
+cp job_watcher.py /usr/local/bin/
+cp run_watcher.py /usr/local/bin/
+
+# 실행 권한 부여
 chmod +x /usr/local/bin/slurm_k8s_prolog.sh
 chmod +x /usr/local/bin/slurm_k8s_epilog.sh
-chmod +x /usr/local/bin/job_validator.sh
-chmod +x /usr/local/bin/job_watcher.sh
+chmod +x /usr/local/bin/job_validator.py
+chmod +x /usr/local/bin/job_watcher.py
+chmod +x /usr/local/bin/run_watcher.py
 
 echo "✓ Scripts installed to /usr/local/bin/"
 
@@ -90,18 +93,18 @@ echo ""
 echo -e "${YELLOW}[4/6] Setting up NAS directories...${NC}"
 
 # NAS 마운트 확인
-if ! mountpoint -q /mnt/nas 2>/dev/null; then
-    echo -e "${YELLOW}Warning: /mnt/nas is not mounted${NC}"
+if ! mountpoint -q /mnt/test-k8s 2>/dev/null; then
+    echo -e "${YELLOW}Warning: /mnt/test-k8s is not mounted${NC}"
     echo "Please ensure NAS is mounted before running jobs"
 else
-    mkdir -p /mnt/nas/slurm-jobs/submit
-    mkdir -p /mnt/nas/slurm-jobs/processed
-    mkdir -p /mnt/nas/slurm-jobs/failed
-    mkdir -p /mnt/nas/results
-    mkdir -p /mnt/nas/scripts
+    mkdir -p /mnt/test-k8s/slurm-jobs/submit
+    mkdir -p /mnt/test-k8s/slurm-jobs/processed
+    mkdir -p /mnt/test-k8s/slurm-jobs/failed
+    mkdir -p /mnt/test-k8s/results
+    mkdir -p /mnt/test-k8s/scripts
     
-    chmod 755 /mnt/nas/slurm-jobs/*
-    chmod 755 /mnt/nas/results
+    chmod 755 /mnt/test-k8s/slurm-jobs/*
+    chmod 755 /mnt/test-k8s/results
     
     echo "✓ NAS directories created"
 fi
@@ -117,7 +120,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/job_watcher.sh
+ExecStart=/usr/bin/python3 /usr/local/bin/run_watcher.py
 Restart=always
 User=slurm
 StandardOutput=journal
@@ -200,15 +203,16 @@ Installation User: $(whoami)
 Scripts Installed:
   - /usr/local/bin/slurm_k8s_prolog.sh
   - /usr/local/bin/slurm_k8s_epilog.sh
-  - /usr/local/bin/job_validator.sh
-  - /usr/local/bin/job_watcher.sh
+  - /usr/local/bin/job_validator.py
+  - /usr/local/bin/job_watcher.py
+  - /usr/local/bin/run_watcher.py
 
 Directories Created:
   - /var/log/slurm-k8s/
-  - /mnt/nas/slurm-jobs/submit/
-  - /mnt/nas/slurm-jobs/processed/
-  - /mnt/nas/slurm-jobs/failed/
-  - /mnt/nas/results/
+  - /mnt/test-k8s/slurm-jobs/submit/
+  - /mnt/test-k8s/slurm-jobs/processed/
+  - /mnt/test-k8s/slurm-jobs/failed/
+  - /mnt/test-k8s/results/
 
 Service Configured:
   - slurm-job-watcher.service

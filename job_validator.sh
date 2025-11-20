@@ -75,9 +75,9 @@ if [[ ! -d "$OUTPUT_DIR" ]]; then
 fi
 
 # 7. NAS 경로 접근 검증
-if grep -q '/mnt/nas' "$JOB_FILE"; then
-    if [[ ! -d "/mnt/nas" ]]; then
-        echo "Error: NAS mount point /mnt/nas not found" | tee -a "$LOG_FILE"
+if grep -q '/mnt/test-k8s' "$JOB_FILE"; then
+    if [[ ! -d "/mnt/test-k8s" ]]; then
+        echo "Error: NAS mount point /mnt/test-k8s not found" | tee -a "$LOG_FILE"
         exit 1
     fi
 fi

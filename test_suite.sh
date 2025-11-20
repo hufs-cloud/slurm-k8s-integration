@@ -37,10 +37,10 @@ echo "=========================================="
 echo -e "\n${YELLOW}[1] Infrastructure Validation${NC}"
 
 # 1.1 NAS 마운트 확인
-if mountpoint -q /mnt/nas; then
+if mountpoint -q /mnt/test-k8s; then
     test_result "NAS mount" "PASS"
 else
-    test_result "NAS mount" "FAIL" "/mnt/nas not mounted"
+    test_result "NAS mount" "FAIL" "/mnt/test-k8s not mounted"
 fi
 
 # 1.2 로컬 레지스트리 접근 확인
@@ -167,7 +167,7 @@ fi
 echo -e "\n${YELLOW}[5] Result Collection Tests${NC}"
 
 # 5.1 결과 디렉토리 생성 확인
-RESULT_DIR="/mnt/nas/results"
+RESULT_DIR="/mnt/test-k8s/results"
 if [[ -d "$RESULT_DIR" ]]; then
     test_result "Result directory accessible" "PASS"
 else
@@ -191,8 +191,8 @@ cat > "$E2E_JOB" <<'EOF'
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=512M
 #SBATCH --time=00:02:00
-#SBATCH --output=/mnt/nas/results/e2e-%j.out
-#SBATCH --error=/mnt/nas/results/e2e-%j.err
+#SBATCH --output=/mnt/test-k8s/results/e2e-%j.out
+#SBATCH --error=/mnt/test-k8s/results/e2e-%j.err
 #K8S_IMAGE=nas-hub.local:5407/alpine:latest
 
 echo "E2E test started at $(date)"
@@ -216,7 +216,7 @@ if [[ -n "$E2E_JOB_ID" ]]; then
             test_result "E2E workflow completion" "PASS"
             
             # 결과 파일 확인
-            if [[ -f "/mnt/nas/results/e2e-${E2E_JOB_ID}.out" ]]; then
+            if [[ -f "/mnt/test-k8s/results/e2e-${E2E_JOB_ID}.out" ]]; then
                 test_result "E2E result file creation" "PASS"
             else
                 test_result "E2E result file creation" "FAIL" "Output file not found"
